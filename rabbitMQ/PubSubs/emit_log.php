@@ -3,25 +3,25 @@
  * Created by PhpStorm.
  * User: david
  * Date: 25/08/16
- * Time: 9:00
+ * Time: 12:41
  */
 require_once '../vendor/autoload.php';
+
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
 $connection = new AMQPStreamConnection('172.17.0.2', 5672, 'guest', 'guest');
+
 $channel = $connection->channel();
+$channel->exchange_declare('logs', 'fanout', false, false, false);
 
-$channel->queue_declare('hello', false, false, false, false);
+$data = implode(' ', array_slice($argv, 1));
+if(empty($data)) $data = "info: Hello World!";
 
-$count = 1;
+$msg = new AMQPMessage($data);
+$channel->basic_publish($msg, 'logs');
 
-while($count <= 5) {
-    $msg = new AMQPMessage("Hello World! $count");
-    $channel->basic_publish($msg, '', 'hello');
-    echo " [x] Sent 'Hello World!' $count \n";
-    $count++;
-}
+echo " [x] Sent ", $data, "\n";
 
 $channel->close();
 $connection->close();
